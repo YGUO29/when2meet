@@ -69,6 +69,13 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
   }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text);
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    caret-color: var(--text);
+  }
   .participant input.name { flex: 0 0 130px; }
   .participant input.email { flex: 0 0 220px; }
   .participant input.loc { flex: 1; min-width: 120px; }
@@ -505,9 +512,9 @@ function addParticipant(p = { name: "", email: "", loc: "" }) {
   const row = document.createElement("div");
   row.className = "participant";
   row.innerHTML = `
-    <input class="name" type="text" placeholder="Name" value="${escapeHtml(p.name || "")}">
-    <input class="email" type="email" placeholder="Email (optional)" value="${escapeHtml(p.email || "")}">
-    <input class="loc" list="city-list" placeholder="City (e.g. Tokyo, Japan) or IANA (Asia/Tokyo)" value="${escapeHtml(p.loc || "")}">
+    <input class="name" type="text" placeholder="Name" autocomplete="off" value="${escapeHtml(p.name || "")}">
+    <input class="email" type="email" placeholder="Email (optional)" autocomplete="off" value="${escapeHtml(p.email || "")}">
+    <input class="loc" list="city-list" placeholder="City (e.g. Tokyo, Japan) or IANA (Asia/Tokyo)" autocomplete="off" value="${escapeHtml(p.loc || "")}">
     <button class="remove" title="Remove">×</button>
   `;
   row.querySelector(".remove").addEventListener("click", () => { row.remove(); saveTeam(); });
