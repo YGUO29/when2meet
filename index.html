@@ -13,13 +13,14 @@
     --text-tertiary: #86868b;
     --accent: #0071e3;
     --accent-hover: #0077ed;
+    --accent-soft: #f0f6ff;
+    --accent-soft-border: #d6e4f7;
     --border: rgba(0, 0, 0, 0.08);
     --border-soft: rgba(0, 0, 0, 0.06);
     --good-bg: #d1f4d6;
     --good-text: #1a6b1f;
     --edge-bg: #fff4d1;
     --edge-text: #6f5300;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   * { box-sizing: border-box; }
@@ -36,6 +37,7 @@
   h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.5rem; }
   .sub { color: var(--text-secondary); margin: 0 0 2.5rem; font-size: 1.0625rem; max-width: 720px; }
   h2 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.015em; margin: 2.5rem 0 1rem; }
+  h3 { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 0.25rem; }
 
   .card {
     background: var(--card);
@@ -45,10 +47,12 @@
     border: 1px solid var(--border-soft);
   }
   .card + .card { margin-top: 1rem; }
+  .card-head { margin-bottom: 1rem; }
+  .hint { color: var(--text-secondary); font-size: 0.875rem; margin: 0; }
 
-  .participant { display: flex; gap: 0.625rem; margin-bottom: 0.625rem; align-items: center; }
+  .participant { display: flex; gap: 0.625rem; margin-bottom: 0.625rem; align-items: center; flex-wrap: wrap; }
   .participant:last-of-type { margin-bottom: 0; }
-  input[type="text"], input[type="number"] {
+  input[type="text"], input[type="email"], input[type="number"], select {
     padding: 0.625rem 0.875rem;
     font-size: 0.9375rem;
     border: 1px solid var(--border);
@@ -59,13 +63,15 @@
     transition: border-color 0.15s, box-shadow 0.15s;
     -webkit-appearance: none;
   }
-  input[type="text"]:focus, input[type="number"]:focus {
+  select { appearance: none; -webkit-appearance: none; padding-right: 2rem; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23666' d='M0 0l5 6 5-6z'/></svg>"); background-repeat: no-repeat; background-position: right 0.75rem center; }
+  input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
   }
-  .participant input.name { flex: 0 0 180px; }
-  .participant input.loc { flex: 1; min-width: 0; }
+  .participant input.name { flex: 0 0 130px; }
+  .participant input.email { flex: 0 0 220px; }
+  .participant input.loc { flex: 1; min-width: 120px; }
   .participant button.remove {
     background: rgba(0, 0, 0, 0.04);
     border: none;
@@ -80,30 +86,46 @@
   }
   .participant button.remove:hover { background: #ffe5e7; color: #d70015; }
 
+  .card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.875rem; }
   button.add {
     background: transparent;
     border: 1px dashed rgba(0, 0, 0, 0.18);
-    padding: 0.625rem 1rem;
+    padding: 0.55rem 1rem;
     cursor: pointer;
     border-radius: 10px;
     font-size: 0.9375rem;
     color: var(--text-secondary);
-    margin-top: 0.875rem;
     font-family: inherit;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
   button.add:hover { background: rgba(0, 0, 0, 0.03); border-color: rgba(0,0,0,0.3); color: var(--text); }
+  button.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-family: inherit;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  button.ghost:hover { background: rgba(0, 0, 0, 0.03); color: var(--text); }
+  button.ghost.danger:hover { color: #d70015; border-color: rgba(215, 0, 21, 0.3); }
+  .spacer { flex: 1; }
 
   .controls {
-    display: flex;
-    gap: 1.75rem;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem 1.25rem;
     align-items: center;
     font-size: 0.9375rem;
     color: var(--text-secondary);
   }
-  .controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
-  .controls input { width: 60px; text-align: center; padding: 0.5rem; }
+  .controls label { display: flex; flex-direction: column; gap: 0.375rem; align-items: flex-start; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; color: var(--text-tertiary); }
+  .controls .row { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.9375rem; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); }
+  .controls .row input { width: 60px; text-align: center; padding: 0.5rem; }
+  .controls input[type="text"], .controls select { width: 100%; }
 
   .actions { margin: 2rem 0 0; }
   button.primary {
@@ -121,6 +143,9 @@
   }
   button.primary:hover { background: var(--accent-hover); }
   button.primary:active { transform: scale(0.98); }
+
+  .results-help { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--text-secondary); }
+  .results-help kbd { display: inline-block; background: var(--accent-soft); border: 1px solid var(--accent-soft-border); color: var(--accent); border-radius: 6px; padding: 1px 7px; font-family: inherit; font-size: 0.8125rem; font-weight: 500; }
 
   .table-wrap {
     overflow-x: auto;
@@ -152,6 +177,22 @@
   td.cell-edge { background: var(--edge-bg); color: var(--edge-text); font-variant-numeric: tabular-nums; }
   .day-offset { opacity: 0.7; font-size: 0.8125rem; margin-left: 4px; }
 
+  .row-actions { display: flex; gap: 0.4rem; white-space: nowrap; }
+  .btn-sm {
+    padding: 5px 11px;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+    border: 1px solid var(--accent-soft-border);
+    background: var(--accent-soft);
+    color: var(--accent);
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: background-color 0.15s, transform 0.08s;
+  }
+  .btn-sm:hover { background: #e1ecfd; }
+  .btn-sm:active { transform: scale(0.97); }
+
   .quality {
     display: inline-block;
     min-width: 72px;
@@ -173,11 +214,29 @@
   .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.875rem; }
   .legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
 
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(29, 29, 31, 0.95);
+    color: #fff;
+    padding: 0.625rem 1.125rem;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   @media (max-width: 640px) {
     .container { padding: 2rem 1rem 3rem; }
     h1 { font-size: 1.875rem; }
-    .participant { flex-wrap: wrap; }
-    .participant input.name { flex: 1 1 calc(100% - 44px); }
+    .participant input.name { flex: 1 1 calc(50% - 22px); }
+    .participant input.email { flex: 1 1 calc(50% - 22px); }
     .participant input.loc { flex: 1 1 100%; }
   }
 </style>
@@ -188,14 +247,44 @@
   <p class="sub">Pick a city for each participant. The tool checks every hour in the next 24 hours, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours.</p>
 
   <div class="card">
+    <div class="card-head">
+      <h3>Participants</h3>
+      <p class="hint">Add 2 or more people. Email is optional — if filled, they're auto-invited when you select a time. Your team is saved to your browser only.</p>
+    </div>
     <div id="participants"></div>
-    <button class="add" id="add-participant">+ Add participant</button>
+    <div class="card-actions">
+      <button class="add" id="add-participant">+ Add participant</button>
+      <span class="spacer"></span>
+      <button class="ghost" id="share-team" title="Copy a private link that pre-fills this team for whoever opens it. Send via Slack/email — don't post publicly.">Copy team share link</button>
+      <button class="ghost danger" id="reset-team" title="Clear saved team and restore default cities">Reset team</button>
+    </div>
   </div>
 
   <div class="card">
+    <div class="card-head">
+      <h3>Meeting settings</h3>
+      <p class="hint">All times are interpreted in each participant's local timezone.</p>
+    </div>
     <div class="controls">
-      <label>Sleep window <input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"></label>
-      <label>Business hours <input type="number" id="biz-start" value="9" min="0" max="23"> – <input type="number" id="biz-end" value="18" min="0" max="23"></label>
+      <label>Sleep window
+        <span class="row"><input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"> (hour)</span>
+      </label>
+      <label>Business hours
+        <span class="row"><input type="number" id="biz-start" value="9" min="0" max="23"> – <input type="number" id="biz-end" value="18" min="0" max="23"> (hour)</span>
+      </label>
+      <label>Duration
+        <select id="duration">
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="45">45 minutes</option>
+          <option value="60" selected>1 hour</option>
+          <option value="90">1.5 hours</option>
+          <option value="120">2 hours</option>
+        </select>
+      </label>
+      <label>Event title
+        <input type="text" id="event-title" value="Meeting" placeholder="Meeting">
+      </label>
     </div>
   </div>
 
@@ -207,6 +296,8 @@
 
   <datalist id="city-list"></datalist>
 </div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
 const CITIES = [
@@ -271,6 +362,13 @@ const CITIES = [
   ["Auckland, New Zealand", "Pacific/Auckland"],
 ];
 
+const TEAM_KEY = "when2meet:team:v1";
+const DEFAULT_TEAM = [
+  { name: "", email: "", loc: "Singapore" },
+  { name: "", email: "", loc: "San Francisco, USA" },
+  { name: "", email: "", loc: "Berlin, Germany" },
+];
+
 const cityMap = new Map(CITIES.map(([label, tz]) => [label, tz]));
 const dl = document.getElementById("city-list");
 for (const [label] of CITIES) {
@@ -281,28 +379,122 @@ for (const [label] of CITIES) {
 
 const participantsEl = document.getElementById("participants");
 const resultsEl = document.getElementById("results");
+const toastEl = document.getElementById("toast");
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-function addParticipant(name = "", loc = "") {
+function showToast(msg, ms = 2000) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.remove("show"), ms);
+}
+
+function readTeamFromUI() {
+  return [...participantsEl.querySelectorAll(".participant")].map(r => ({
+    name: r.querySelector(".name").value.trim(),
+    email: r.querySelector(".email").value.trim(),
+    loc: r.querySelector(".loc").value.trim(),
+  }));
+}
+
+function saveTeam() {
+  try {
+    const team = readTeamFromUI();
+    localStorage.setItem(TEAM_KEY, JSON.stringify(team));
+  } catch {}
+}
+
+function loadTeam() {
+  try {
+    const s = localStorage.getItem(TEAM_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_TEAM;
+}
+
+function teamToB64(team) {
+  const json = JSON.stringify(team);
+  const bytes = new TextEncoder().encode(json);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function teamFromB64(s) {
+  let b = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (b.length % 4) b += "=";
+  const bin = atob(b);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function addParticipant(p = { name: "", email: "", loc: "" }) {
   const row = document.createElement("div");
   row.className = "participant";
   row.innerHTML = `
-    <input class="name" type="text" placeholder="Name (optional)" value="${escapeHtml(name)}">
-    <input class="loc" list="city-list" placeholder="City (e.g. Tokyo, Japan) or IANA (Asia/Tokyo)" value="${escapeHtml(loc)}">
+    <input class="name" type="text" placeholder="Name" value="${escapeHtml(p.name || "")}">
+    <input class="email" type="email" placeholder="Email (optional)" value="${escapeHtml(p.email || "")}">
+    <input class="loc" list="city-list" placeholder="City (e.g. Tokyo, Japan) or IANA (Asia/Tokyo)" value="${escapeHtml(p.loc || "")}">
     <button class="remove" title="Remove">×</button>
   `;
-  row.querySelector(".remove").addEventListener("click", () => row.remove());
+  row.querySelector(".remove").addEventListener("click", () => { row.remove(); saveTeam(); });
+  for (const inp of row.querySelectorAll("input")) {
+    inp.addEventListener("input", saveTeam);
+  }
   participantsEl.appendChild(row);
 }
 
-document.getElementById("add-participant").addEventListener("click", () => addParticipant());
+function renderTeam(team) {
+  participantsEl.innerHTML = "";
+  for (const p of team) addParticipant(p);
+}
 
-addParticipant("", "Singapore");
-addParticipant("", "San Francisco, USA");
-addParticipant("", "Berlin, Germany");
+function applyHashTeamIfPresent() {
+  const m = location.hash.match(/^#team=([A-Za-z0-9_\-]+=*)/);
+  if (!m) return false;
+  try {
+    const team = teamFromB64(m[1]);
+    if (Array.isArray(team) && team.length > 0) {
+      localStorage.setItem(TEAM_KEY, JSON.stringify(team));
+      history.replaceState(null, "", location.pathname + location.search);
+      renderTeam(team);
+      showToast("Team imported from share link");
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+document.getElementById("add-participant").addEventListener("click", () => { addParticipant(); saveTeam(); });
+
+document.getElementById("share-team").addEventListener("click", async () => {
+  const team = readTeamFromUI().filter(p => p.name || p.email || p.loc);
+  if (team.length === 0) { showToast("Add at least one person first"); return; }
+  const url = location.origin + location.pathname + "#team=" + teamToB64(team);
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast("Share link copied — send via private DM, not public");
+  } catch {
+    prompt("Copy this link and DM it to your team (don't post publicly):", url);
+  }
+});
+
+document.getElementById("reset-team").addEventListener("click", () => {
+  if (!confirm("Clear saved team and restore the default cities?")) return;
+  localStorage.removeItem(TEAM_KEY);
+  renderTeam(DEFAULT_TEAM);
+  showToast("Team reset to defaults");
+});
+
+if (!applyHashTeamIfPresent()) {
+  renderTeam(loadTeam());
+}
 
 function resolveTz(input) {
   const t = input.trim();
@@ -326,13 +518,10 @@ function getLocalParts(date, tz) {
   const get = t => parts.find(p => p.type === t)?.value;
   let hour = parseInt(get("hour"));
   if (hour === 24) hour = 0;
-  const y = parseInt(get("year"));
-  const mo = parseInt(get("month"));
-  const d = parseInt(get("day"));
   return {
     hour,
     minute: parseInt(get("minute")),
-    dayNum: Date.UTC(y, mo - 1, d) / 86400000,
+    dayNum: Date.UTC(parseInt(get("year")), parseInt(get("month")) - 1, parseInt(get("day"))) / 86400000,
   };
 }
 
@@ -371,21 +560,96 @@ function fmtRange(startLp, endLp, refDayNum) {
   return timeRange + offsetStr;
 }
 
+function pad(n) { return String(n).padStart(2, "0"); }
+function utcStamp(d) {
+  return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate())
+    + "T" + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + "Z";
+}
+function escapeIcsText(s) {
+  return String(s).replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/[,;]/g, m => "\\" + m);
+}
+
+function buildEventBody(participants, slot) {
+  const refDay = slot.cells[0].lp.dayNum;
+  const lines = participants.map((p, i) => {
+    const c = slot.cells[i];
+    const off = c.lp.dayNum - refDay;
+    const offStr = off > 0 ? ` (+${off}d)` : off < 0 ? ` (${off}d)` : "";
+    const startStr = fmtTime(c.lp.hour, c.lp.minute);
+    const endStr = fmtTime(c.lpEnd.hour, c.lpEnd.minute);
+    return `${p.name} (${p.tz}): ${startStr}–${endStr}${offStr}`;
+  });
+  return lines.join("\n");
+}
+
+function buildIcs({ title, start, end, body, attendees }) {
+  const uid = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)) + "@when2meet";
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//when2meet//meeting-time-finder//EN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    "UID:" + uid,
+    "DTSTAMP:" + utcStamp(new Date()),
+    "DTSTART:" + utcStamp(start),
+    "DTEND:" + utcStamp(end),
+    "SUMMARY:" + escapeIcsText(title),
+    "DESCRIPTION:" + escapeIcsText(body),
+  ];
+  for (const a of attendees) {
+    const cn = escapeIcsText(a.name || a.email);
+    lines.push(`ATTENDEE;CN=${cn};RSVP=TRUE:mailto:${a.email}`);
+  }
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return lines.join("\r\n");
+}
+
+function downloadIcs(text, filename) {
+  const blob = new Blob([text], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function outlookWebUrl({ title, start, end, body, attendees }) {
+  const params = new URLSearchParams();
+  params.set("path", "/calendar/action/compose");
+  params.set("rru", "addevent");
+  params.set("subject", title);
+  params.set("startdt", start.toISOString());
+  params.set("enddt", end.toISOString());
+  params.set("body", body);
+  params.set("allday", "false");
+  if (attendees.length) params.set("to", attendees.map(a => a.email).join(","));
+  return "https://outlook.office.com/calendar/0/deeplink/compose?" + params.toString();
+}
+
+function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
 document.getElementById("find").addEventListener("click", () => {
   resultsEl.innerHTML = "";
 
-  const rows = [...participantsEl.querySelectorAll(".participant")];
+  const team = readTeamFromUI();
   const participants = [];
-  for (const r of rows) {
-    const name = r.querySelector(".name").value.trim();
-    const locInput = r.querySelector(".loc").value.trim();
-    if (!locInput) continue;
-    const tz = resolveTz(locInput);
+  for (const t of team) {
+    if (!t.loc) continue;
+    const tz = resolveTz(t.loc);
     if (!tz) {
-      resultsEl.innerHTML = `<p class="err">Unknown location: "${escapeHtml(locInput)}". Pick from the suggestion list, or type an IANA name like <code>Asia/Tokyo</code>.</p>`;
+      resultsEl.innerHTML = `<p class="err">Unknown location: "${escapeHtml(t.loc)}". Pick from the suggestion list, or type an IANA name like <code>Asia/Tokyo</code>.</p>`;
       return;
     }
-    participants.push({ name: name || locInput.split(",")[0].trim(), tz, label: locInput });
+    participants.push({
+      name: t.name || t.loc.split(",")[0].trim(),
+      email: t.email,
+      tz,
+      label: t.loc,
+    });
   }
 
   if (participants.length < 2) {
@@ -397,6 +661,9 @@ document.getElementById("find").addEventListener("click", () => {
   const sleepEnd = parseInt(document.getElementById("sleep-end").value);
   const bizStart = parseInt(document.getElementById("biz-start").value);
   const bizEnd = parseInt(document.getElementById("biz-end").value);
+  const durationMin = parseInt(document.getElementById("duration").value);
+  const durationMs = durationMin * 60 * 1000;
+  const titleInput = document.getElementById("event-title").value.trim() || "Meeting";
 
   const HOURS = 24;
   const now = new Date();
@@ -408,7 +675,7 @@ document.getElementById("find").addEventListener("click", () => {
   const slots = [];
   for (let i = 0; i < HOURS; i++) {
     const t = new Date(start.getTime() + i * 3600000);
-    const tEnd = new Date(t.getTime() + 3600000);
+    const tEnd = new Date(t.getTime() + durationMs);
     let allAwake = true;
     let bizCount = 0;
     const cells = [];
@@ -416,13 +683,14 @@ document.getElementById("find").addEventListener("click", () => {
       const lp = getLocalParts(t, p.tz);
       const lpEnd = getLocalParts(tEnd, p.tz);
       const tHour = lp.hour + lp.minute / 60;
-      if (inWindow(tHour, sleepStart, sleepEnd)) { allAwake = false; break; }
+      const eHour = lpEnd.hour + lpEnd.minute / 60;
+      if (inWindow(tHour, sleepStart, sleepEnd) || inWindow(eHour, sleepStart, sleepEnd)) { allAwake = false; break; }
       const inBiz = inWindow(tHour, bizStart, bizEnd);
       if (inBiz) bizCount++;
       cells.push({ p, lp, lpEnd, inBiz });
     }
     if (!allAwake) continue;
-    slots.push({ t, bizCount, cells });
+    slots.push({ t, tEnd, bizCount, cells });
   }
 
   if (slots.length === 0) {
@@ -432,12 +700,16 @@ document.getElementById("find").addEventListener("click", () => {
 
   slots.sort((a, b) => b.bizCount - a.bizCount || a.t - b.t);
 
-  let html = `<h2>${slots.length} hour${slots.length === 1 ? "" : "s"} where everyone is awake</h2>`;
-  html += `<div class="table-wrap"><table><thead><tr><th>#</th><th>Quality</th>`;
+  const html = [];
+  html.push(`<h2>${slots.length} option${slots.length === 1 ? "" : "s"} where everyone is awake</h2>`);
+  html.push(`<div class="results-help">
+    <span>To pick a time, click <kbd>.ics</kbd> for Outlook desktop or <kbd>Web</kbd> for Outlook in browser.</span>
+  </div>`);
+  html.push(`<div class="table-wrap"><table><thead><tr><th>#</th><th>Quality</th>`);
   for (const p of participants) {
-    html += `<th>${escapeHtml(p.name)}<small>${escapeHtml(p.tz)}</small></th>`;
+    html.push(`<th>${escapeHtml(p.name)}<small>${escapeHtml(p.tz)}</small></th>`);
   }
-  html += `</tr></thead><tbody>`;
+  html.push(`<th>Add to calendar</th></tr></thead><tbody>`);
 
   let rank = 0;
   for (const s of slots) {
@@ -450,24 +722,48 @@ document.getElementById("find").addEventListener("click", () => {
     else                    { qClass = "q-low";  qLabel = "Edgy"; }
 
     const refDayNum = s.cells[0].lp.dayNum;
-
-    html += `<tr>`;
-    html += `<td class="rank">${rank}</td>`;
-    html += `<td><span class="quality ${qClass}">${qLabel}</span></td>`;
+    html.push(`<tr>`);
+    html.push(`<td class="rank">${rank}</td>`);
+    html.push(`<td><span class="quality ${qClass}">${qLabel}</span></td>`);
     for (const c of s.cells) {
       const cellClass = c.inBiz ? "cell-good" : "cell-edge";
-      html += `<td class="${cellClass}">${fmtRange(c.lp, c.lpEnd, refDayNum)}</td>`;
+      html.push(`<td class="${cellClass}">${fmtRange(c.lp, c.lpEnd, refDayNum)}</td>`);
     }
-    html += `</tr>`;
+    html.push(`<td><div class="row-actions">
+      <button class="btn-sm" data-action="ics" data-rank="${rank - 1}">.ics</button>
+      <button class="btn-sm" data-action="web" data-rank="${rank - 1}">Web</button>
+    </div></td>`);
+    html.push(`</tr>`);
   }
-  html += `</tbody></table></div>`;
-  html += `<div class="legend">
+  html.push(`</tbody></table></div>`);
+  html.push(`<div class="legend">
     <span><span class="legend-swatch" style="background:#d1f4d6"></span>In business hours</span>
     <span><span class="legend-swatch" style="background:#fff4d1"></span>Awake but outside business hours</span>
-  </div>`;
-  html += `<p class="footnote">Rows are sorted with the best slots first. Day offsets like <code>(+1d)</code> are relative to the first participant's local day.</p>`;
+  </div>`);
+  html.push(`<p class="footnote">Day offsets like <code>(+1d)</code> are relative to ${escapeHtml(participants[0].name)}'s local day.</p>`);
 
-  resultsEl.innerHTML = html;
+  resultsEl.innerHTML = html.join("");
+
+  resultsEl.querySelectorAll("[data-action]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.rank);
+      const slot = slots[idx];
+      const attendees = participants
+        .filter(p => p.email && isValidEmail(p.email))
+        .map(p => ({ name: p.name, email: p.email }));
+      const body = buildEventBody(participants, slot);
+      const eventArgs = { title: titleInput, start: slot.t, end: slot.tEnd, body, attendees };
+
+      if (btn.dataset.action === "ics") {
+        const ics = buildIcs(eventArgs);
+        downloadIcs(ics, `meeting-${slot.t.toISOString().slice(0,16).replace(/[-:]/g,"")}.ics`);
+        showToast("Downloaded — open the .ics file to add it to Outlook");
+      } else {
+        const url = outlookWebUrl(eventArgs);
+        window.open(url, "_blank", "noopener");
+      }
+    });
+  });
 });
 </script>
 </body>
