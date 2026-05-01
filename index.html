@@ -2,59 +2,211 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meeting Time Finder</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1.25rem; color: #1a1a1a; }
-  h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
-  .sub { color: #666; margin: 0 0 1.5rem; font-size: 14px; }
-  h2 { font-size: 1.1rem; margin: 1.75rem 0 0.5rem; }
-  .participant { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
-  .participant input { padding: 0.45rem 0.55rem; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
-  .participant input.name { flex: 0 0 150px; }
-  .participant input.loc { flex: 1; }
-  .participant button.remove { background: #fff; border: 1px solid #ddd; color: #c00; padding: 0.35rem 0.6rem; cursor: pointer; border-radius: 4px; font-size: 16px; line-height: 1; }
-  .participant button.remove:hover { background: #fee; }
-  .controls { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; margin: 1.25rem 0; padding: 0.75rem 1rem; background: #f7f8fa; border-radius: 6px; font-size: 14px; }
-  .controls input { padding: 0.3rem 0.4rem; font-size: 14px; border: 1px solid #ccc; border-radius: 3px; width: 56px; }
-  button.primary { background: #2c5fff; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
-  button.primary:hover { background: #1a48d6; }
-  button.add { background: #fff; border: 1px dashed #aaa; padding: 0.45rem 0.9rem; cursor: pointer; border-radius: 4px; font-size: 14px; color: #555; margin-bottom: 0.5rem; }
-  button.add:hover { background: #f3f3f3; }
-  table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
-  th, td { padding: 0.5rem 0.65rem; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
-  th { background: #f7f8fa; font-weight: 600; }
-  th small { font-weight: normal; color: #888; display: block; margin-top: 2px; }
-  td.rank { width: 38px; text-align: center; color: #888; font-weight: 500; }
-  td.cell-good { background: #d6f0d6; color: #0f5d10; }
-  td.cell-edge { background: #fff1c8; color: #7a5400; }
-  .quality { display: inline-block; min-width: 64px; text-align: center; padding: 3px 10px; border-radius: 3px; color: white; font-size: 12px; font-weight: 500; }
-  .quality.q-best { background: #2ca02c; }
-  .quality.q-good { background: #66aa66; }
-  .quality.q-mid  { background: #d9a000; }
-  .quality.q-low  { background: #cc5500; }
-  .err { color: #c00; padding: 0.75rem; background: #fee; border-radius: 4px; }
-  .footnote { color: #666; font-size: 13px; margin-top: 0.75rem; }
-  .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 13px; color: #555; margin-top: 0.5rem; }
-  .legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --text-tertiary: #86868b;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-soft: rgba(0, 0, 0, 0.06);
+    --good-bg: #d1f4d6;
+    --good-text: #1a6b1f;
+    --edge-bg: #fff4d1;
+    --edge-text: #6f5300;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 4rem 1.5rem 5rem; }
+  h1 { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 0.5rem; }
+  .sub { color: var(--text-secondary); margin: 0 0 2.5rem; font-size: 1.0625rem; max-width: 720px; }
+  h2 { font-size: 1.375rem; font-weight: 600; letter-spacing: -0.015em; margin: 2.5rem 0 1rem; }
+
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-soft);
+  }
+  .card + .card { margin-top: 1rem; }
+
+  .participant { display: flex; gap: 0.625rem; margin-bottom: 0.625rem; align-items: center; }
+  .participant:last-of-type { margin-bottom: 0; }
+  input[type="text"], input[type="number"] {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -webkit-appearance: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  }
+  .participant input.name { flex: 0 0 180px; }
+  .participant input.loc { flex: 1; min-width: 0; }
+  .participant button.remove {
+    background: rgba(0, 0, 0, 0.04);
+    border: none;
+    color: var(--text-secondary);
+    width: 32px; height: 32px; flex: 0 0 32px;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .participant button.remove:hover { background: #ffe5e7; color: #d70015; }
+
+  button.add {
+    background: transparent;
+    border: 1px dashed rgba(0, 0, 0, 0.18);
+    padding: 0.625rem 1rem;
+    cursor: pointer;
+    border-radius: 10px;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    margin-top: 0.875rem;
+    font-family: inherit;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+  button.add:hover { background: rgba(0, 0, 0, 0.03); border-color: rgba(0,0,0,0.3); color: var(--text); }
+
+  .controls {
+    display: flex;
+    gap: 1.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .controls input { width: 60px; text-align: center; padding: 0.5rem; }
+
+  .actions { margin: 2rem 0 0; }
+  button.primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.75rem;
+    border-radius: 980px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: background-color 0.15s, transform 0.08s;
+    box-shadow: 0 1px 2px rgba(0, 113, 227, 0.2);
+  }
+  button.primary:hover { background: var(--accent-hover); }
+  button.primary:active { transform: scale(0.98); }
+
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid var(--border-soft);
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  table { border-collapse: collapse; width: 100%; }
+  th, td {
+    padding: 0.75rem 0.875rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 0.9375rem;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  th {
+    background: rgba(0, 0, 0, 0.025);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  th small { font-weight: normal; color: var(--text-tertiary); display: block; margin-top: 3px; text-transform: none; letter-spacing: 0; font-size: 0.75rem; }
+  td.rank { width: 38px; text-align: center; color: var(--text-tertiary); font-weight: 500; font-variant-numeric: tabular-nums; }
+  td.cell-good { background: var(--good-bg); color: var(--good-text); font-variant-numeric: tabular-nums; }
+  td.cell-edge { background: var(--edge-bg); color: var(--edge-text); font-variant-numeric: tabular-nums; }
+  .day-offset { opacity: 0.7; font-size: 0.8125rem; margin-left: 4px; }
+
+  .quality {
+    display: inline-block;
+    min-width: 72px;
+    text-align: center;
+    padding: 4px 12px;
+    border-radius: 980px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .quality.q-best { background: #34c759; }
+  .quality.q-good { background: #5ac26b; }
+  .quality.q-mid  { background: #ff9f0a; }
+  .quality.q-low  { background: #ff6b35; }
+
+  .err { color: #d70015; padding: 1rem 1.25rem; background: #ffe5e7; border-radius: 12px; font-size: 0.9375rem; margin-top: 1rem; }
+  .footnote { color: var(--text-secondary); font-size: 0.8125rem; margin-top: 1rem; }
+  .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.875rem; }
+  .legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+
+  @media (max-width: 640px) {
+    .container { padding: 2rem 1rem 3rem; }
+    h1 { font-size: 1.875rem; }
+    .participant { flex-wrap: wrap; }
+    .participant input.name { flex: 1 1 calc(100% - 44px); }
+    .participant input.loc { flex: 1 1 100%; }
+  }
 </style>
 </head>
 <body>
-<h1>Meeting time finder</h1>
-<p class="sub">Pick a city for each participant. The tool checks every hour in the next 24 hours, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours. Each cell is colored by that person's local time.</p>
+<div class="container">
+  <h1>Meeting time finder</h1>
+  <p class="sub">Pick a city for each participant. The tool checks every hour in the next 24 hours, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours.</p>
 
-<div id="participants"></div>
-<button class="add" id="add-participant">+ Add participant</button>
+  <div class="card">
+    <div id="participants"></div>
+    <button class="add" id="add-participant">+ Add participant</button>
+  </div>
 
-<div class="controls">
-  <label>Sleep window <input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"></label>
-  <label>Business hours <input type="number" id="biz-start" value="9" min="0" max="23"> – <input type="number" id="biz-end" value="18" min="0" max="23"></label>
+  <div class="card">
+    <div class="controls">
+      <label>Sleep window <input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"></label>
+      <label>Business hours <input type="number" id="biz-start" value="9" min="0" max="23"> – <input type="number" id="biz-end" value="18" min="0" max="23"></label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="find">Find meeting times</button>
+  </div>
+
+  <div id="results"></div>
+
+  <datalist id="city-list"></datalist>
 </div>
-
-<button class="primary" id="find">Find meeting times</button>
-
-<div id="results"></div>
-
-<datalist id="city-list"></datalist>
 
 <script>
 const CITIES = [
@@ -148,9 +300,9 @@ function addParticipant(name = "", loc = "") {
 
 document.getElementById("add-participant").addEventListener("click", () => addParticipant());
 
-addParticipant("", "Shanghai, China");
-addParticipant("", "London, UK");
-addParticipant("", "New York, USA");
+addParticipant("", "Singapore");
+addParticipant("", "San Francisco, USA");
+addParticipant("", "Berlin, Germany");
 
 function resolveTz(input) {
   const t = input.trim();
@@ -166,16 +318,22 @@ function resolveTz(input) {
 function getLocalParts(date, tz) {
   const f = new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
-    hour: "2-digit",
-    minute: "2-digit",
-    weekday: "short",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
     hour12: false,
   });
   const parts = f.formatToParts(date);
   const get = t => parts.find(p => p.type === t)?.value;
   let hour = parseInt(get("hour"));
   if (hour === 24) hour = 0;
-  return { hour, minute: parseInt(get("minute")), weekday: get("weekday") };
+  const y = parseInt(get("year"));
+  const mo = parseInt(get("month"));
+  const d = parseInt(get("day"));
+  return {
+    hour,
+    minute: parseInt(get("minute")),
+    dayNum: Date.UTC(y, mo - 1, d) / 86400000,
+  };
 }
 
 function inWindow(t, start, end) {
@@ -184,27 +342,33 @@ function inWindow(t, start, end) {
   return t >= start || t < end;
 }
 
-function fmt12(h, m) {
+function fmtTime(h, m) {
   const period = h < 12 ? "am" : "pm";
   let h12 = h % 12;
   if (h12 === 0) h12 = 12;
   return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
 }
 
-function fmtRange(startLp, endLp) {
-  const sameDay = startLp.weekday === endLp.weekday;
+function fmtRange(startLp, endLp, refDayNum) {
   const sPeriod = startLp.hour < 12 ? "am" : "pm";
   const ePeriod = endLp.hour < 12 ? "am" : "pm";
-  const startStr = fmt12(startLp.hour, startLp.minute);
-  const endStr = fmt12(endLp.hour, endLp.minute);
-  if (sameDay) {
-    if (sPeriod === ePeriod) {
-      const startCompact = startStr.replace(/(am|pm)$/, "");
-      return `<strong>${startLp.weekday}</strong> ${startCompact}–${endStr}`;
-    }
-    return `<strong>${startLp.weekday}</strong> ${startStr}–${endStr}`;
+  const sameDay = startLp.dayNum === endLp.dayNum;
+  const startStr = fmtTime(startLp.hour, startLp.minute);
+  const endStr = fmtTime(endLp.hour, endLp.minute);
+
+  let timeRange;
+  if (sameDay && sPeriod === ePeriod) {
+    const startCompact = startStr.replace(/(am|pm)$/, "");
+    timeRange = `${startCompact}–${endStr}`;
+  } else {
+    timeRange = `${startStr}–${endStr}`;
   }
-  return `<strong>${startLp.weekday}</strong> ${startStr} – <strong>${endLp.weekday}</strong> ${endStr}`;
+
+  const offset = startLp.dayNum - refDayNum;
+  let offsetStr = "";
+  if (offset > 0) offsetStr = ` <span class="day-offset">(+${offset}d)</span>`;
+  else if (offset < 0) offsetStr = ` <span class="day-offset">(${offset}d)</span>`;
+  return timeRange + offsetStr;
 }
 
 document.getElementById("find").addEventListener("click", () => {
@@ -269,7 +433,7 @@ document.getElementById("find").addEventListener("click", () => {
   slots.sort((a, b) => b.bizCount - a.bizCount || a.t - b.t);
 
   let html = `<h2>${slots.length} hour${slots.length === 1 ? "" : "s"} where everyone is awake</h2>`;
-  html += `<table><thead><tr><th>#</th><th>Quality</th>`;
+  html += `<div class="table-wrap"><table><thead><tr><th>#</th><th>Quality</th>`;
   for (const p of participants) {
     html += `<th>${escapeHtml(p.name)}<small>${escapeHtml(p.tz)}</small></th>`;
   }
@@ -285,21 +449,23 @@ document.getElementById("find").addEventListener("click", () => {
     else if (ratio >= 0.34) { qClass = "q-mid";  qLabel = "Not ideal"; }
     else                    { qClass = "q-low";  qLabel = "Edgy"; }
 
+    const refDayNum = s.cells[0].lp.dayNum;
+
     html += `<tr>`;
     html += `<td class="rank">${rank}</td>`;
     html += `<td><span class="quality ${qClass}">${qLabel}</span></td>`;
     for (const c of s.cells) {
       const cellClass = c.inBiz ? "cell-good" : "cell-edge";
-      html += `<td class="${cellClass}">${fmtRange(c.lp, c.lpEnd)}</td>`;
+      html += `<td class="${cellClass}">${fmtRange(c.lp, c.lpEnd, refDayNum)}</td>`;
     }
     html += `</tr>`;
   }
-  html += `</tbody></table>`;
+  html += `</tbody></table></div>`;
   html += `<div class="legend">
-    <span><span class="legend-swatch" style="background:#d6f0d6"></span>In business hours</span>
-    <span><span class="legend-swatch" style="background:#fff1c8"></span>Awake but outside business hours</span>
+    <span><span class="legend-swatch" style="background:#d1f4d6"></span>In business hours</span>
+    <span><span class="legend-swatch" style="background:#fff4d1"></span>Awake but outside business hours</span>
   </div>`;
-  html += `<p class="footnote">Rows are sorted with the best slots first. Each cell shows that hour in the participant's local time, colored by whether it falls inside their business hours.</p>`;
+  html += `<p class="footnote">Rows are sorted with the best slots first. Day offsets like <code>(+1d)</code> are relative to the first participant's local day.</p>`;
 
   resultsEl.innerHTML = html;
 });
