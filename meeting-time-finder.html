@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Meeting Time Finder</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1.25rem; color: #1a1a1a; }
+  h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+  .sub { color: #666; margin: 0 0 1.5rem; font-size: 14px; }
+  h2 { font-size: 1.1rem; margin: 1.75rem 0 0.5rem; }
+  .participant { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+  .participant input { padding: 0.45rem 0.55rem; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+  .participant input.name { flex: 0 0 150px; }
+  .participant input.loc { flex: 1; }
+  .participant button.remove { background: #fff; border: 1px solid #ddd; color: #c00; padding: 0.35rem 0.6rem; cursor: pointer; border-radius: 4px; font-size: 16px; line-height: 1; }
+  .participant button.remove:hover { background: #fee; }
+  .controls { display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; margin: 1.25rem 0; padding: 0.75rem 1rem; background: #f7f8fa; border-radius: 6px; font-size: 14px; }
+  .controls input { padding: 0.3rem 0.4rem; font-size: 14px; border: 1px solid #ccc; border-radius: 3px; width: 56px; }
+  button.primary { background: #2c5fff; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500; }
+  button.primary:hover { background: #1a48d6; }
+  button.add { background: #fff; border: 1px dashed #aaa; padding: 0.45rem 0.9rem; cursor: pointer; border-radius: 4px; font-size: 14px; color: #555; margin-bottom: 0.5rem; }
+  button.add:hover { background: #f3f3f3; }
+  table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+  th, td { padding: 0.5rem 0.65rem; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+  th { background: #f7f8fa; font-weight: 600; }
+  th small { font-weight: normal; color: #888; display: block; margin-top: 2px; }
+  td.rank { width: 38px; text-align: center; color: #888; font-weight: 500; }
+  td.cell-good { background: #d6f0d6; color: #0f5d10; }
+  td.cell-edge { background: #fff1c8; color: #7a5400; }
+  .quality { display: inline-block; min-width: 64px; text-align: center; padding: 3px 10px; border-radius: 3px; color: white; font-size: 12px; font-weight: 500; }
+  .quality.q-best { background: #2ca02c; }
+  .quality.q-good { background: #66aa66; }
+  .quality.q-mid  { background: #d9a000; }
+  .quality.q-low  { background: #cc5500; }
+  .err { color: #c00; padding: 0.75rem; background: #fee; border-radius: 4px; }
+  .footnote { color: #666; font-size: 13px; margin-top: 0.75rem; }
+  .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 13px; color: #555; margin-top: 0.5rem; }
+  .legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<h1>Meeting time finder</h1>
+<p class="sub">Pick a city for each participant. The tool checks every hour in the next 24 hours, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours. Each cell is colored by that person's local time.</p>
+
+<div id="participants"></div>
+<button class="add" id="add-participant">+ Add participant</button>
+
+<div class="controls">
+  <label>Sleep window <input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"></label>
+  <label>Business hours <input type="number" id="biz-start" value="9" min="0" max="23"> – <input type="number" id="biz-end" value="18" min="0" max="23"></label>
+</div>
+
+<button class="primary" id="find">Find meeting times</button>
+
+<div id="results"></div>
+
+<datalist id="city-list"></datalist>
+
+<script>
+const CITIES = [
+  ["San Francisco, USA", "America/Los_Angeles"],
+  ["Los Angeles, USA", "America/Los_Angeles"],
+  ["Seattle, USA", "America/Los_Angeles"],
+  ["Vancouver, Canada", "America/Vancouver"],
+  ["Denver, USA", "America/Denver"],
+  ["Chicago, USA", "America/Chicago"],
+  ["Mexico City, Mexico", "America/Mexico_City"],
+  ["New York, USA", "America/New_York"],
+  ["Toronto, Canada", "America/Toronto"],
+  ["Miami, USA", "America/New_York"],
+  ["São Paulo, Brazil", "America/Sao_Paulo"],
+  ["Buenos Aires, Argentina", "America/Argentina/Buenos_Aires"],
+  ["Santiago, Chile", "America/Santiago"],
+  ["London, UK", "Europe/London"],
+  ["Dublin, Ireland", "Europe/Dublin"],
+  ["Lisbon, Portugal", "Europe/Lisbon"],
+  ["Paris, France", "Europe/Paris"],
+  ["Madrid, Spain", "Europe/Madrid"],
+  ["Berlin, Germany", "Europe/Berlin"],
+  ["Amsterdam, Netherlands", "Europe/Amsterdam"],
+  ["Zurich, Switzerland", "Europe/Zurich"],
+  ["Rome, Italy", "Europe/Rome"],
+  ["Stockholm, Sweden", "Europe/Stockholm"],
+  ["Warsaw, Poland", "Europe/Warsaw"],
+  ["Athens, Greece", "Europe/Athens"],
+  ["Istanbul, Turkey", "Europe/Istanbul"],
+  ["Moscow, Russia", "Europe/Moscow"],
+  ["Cairo, Egypt", "Africa/Cairo"],
+  ["Lagos, Nigeria", "Africa/Lagos"],
+  ["Johannesburg, South Africa", "Africa/Johannesburg"],
+  ["Nairobi, Kenya", "Africa/Nairobi"],
+  ["Tel Aviv, Israel", "Asia/Jerusalem"],
+  ["Riyadh, Saudi Arabia", "Asia/Riyadh"],
+  ["Dubai, UAE", "Asia/Dubai"],
+  ["Karachi, Pakistan", "Asia/Karachi"],
+  ["Mumbai, India", "Asia/Kolkata"],
+  ["Delhi, India", "Asia/Kolkata"],
+  ["Bangalore, India", "Asia/Kolkata"],
+  ["Dhaka, Bangladesh", "Asia/Dhaka"],
+  ["Bangkok, Thailand", "Asia/Bangkok"],
+  ["Ho Chi Minh City, Vietnam", "Asia/Ho_Chi_Minh"],
+  ["Jakarta, Indonesia", "Asia/Jakarta"],
+  ["Singapore", "Asia/Singapore"],
+  ["Kuala Lumpur, Malaysia", "Asia/Kuala_Lumpur"],
+  ["Manila, Philippines", "Asia/Manila"],
+  ["Hong Kong", "Asia/Hong_Kong"],
+  ["Taipei, Taiwan", "Asia/Taipei"],
+  ["Shanghai, China", "Asia/Shanghai"],
+  ["Beijing, China", "Asia/Shanghai"],
+  ["Shenzhen, China", "Asia/Shanghai"],
+  ["Guangzhou, China", "Asia/Shanghai"],
+  ["Seoul, South Korea", "Asia/Seoul"],
+  ["Tokyo, Japan", "Asia/Tokyo"],
+  ["Osaka, Japan", "Asia/Tokyo"],
+  ["Perth, Australia", "Australia/Perth"],
+  ["Sydney, Australia", "Australia/Sydney"],
+  ["Melbourne, Australia", "Australia/Melbourne"],
+  ["Brisbane, Australia", "Australia/Brisbane"],
+  ["Auckland, New Zealand", "Pacific/Auckland"],
+];
+
+const cityMap = new Map(CITIES.map(([label, tz]) => [label, tz]));
+const dl = document.getElementById("city-list");
+for (const [label] of CITIES) {
+  const o = document.createElement("option");
+  o.value = label;
+  dl.appendChild(o);
+}
+
+const participantsEl = document.getElementById("participants");
+const resultsEl = document.getElementById("results");
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function addParticipant(name = "", loc = "") {
+  const row = document.createElement("div");
+  row.className = "participant";
+  row.innerHTML = `
+    <input class="name" type="text" placeholder="Name (optional)" value="${escapeHtml(name)}">
+    <input class="loc" list="city-list" placeholder="City (e.g. Tokyo, Japan) or IANA (Asia/Tokyo)" value="${escapeHtml(loc)}">
+    <button class="remove" title="Remove">×</button>
+  `;
+  row.querySelector(".remove").addEventListener("click", () => row.remove());
+  participantsEl.appendChild(row);
+}
+
+document.getElementById("add-participant").addEventListener("click", () => addParticipant());
+
+addParticipant("", "Shanghai, China");
+addParticipant("", "London, UK");
+addParticipant("", "New York, USA");
+
+function resolveTz(input) {
+  const t = input.trim();
+  if (cityMap.has(t)) return cityMap.get(t);
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: t });
+    return t;
+  } catch {
+    return null;
+  }
+}
+
+function getLocalParts(date, tz) {
+  const f = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    weekday: "short",
+    hour12: false,
+  });
+  const parts = f.formatToParts(date);
+  const get = t => parts.find(p => p.type === t)?.value;
+  let hour = parseInt(get("hour"));
+  if (hour === 24) hour = 0;
+  return { hour, minute: parseInt(get("minute")), weekday: get("weekday") };
+}
+
+function inWindow(t, start, end) {
+  if (start === end) return false;
+  if (start < end) return t >= start && t < end;
+  return t >= start || t < end;
+}
+
+function fmt12(h, m) {
+  const period = h < 12 ? "am" : "pm";
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
+}
+
+function fmtRange(startLp, endLp) {
+  const sameDay = startLp.weekday === endLp.weekday;
+  const sPeriod = startLp.hour < 12 ? "am" : "pm";
+  const ePeriod = endLp.hour < 12 ? "am" : "pm";
+  const startStr = fmt12(startLp.hour, startLp.minute);
+  const endStr = fmt12(endLp.hour, endLp.minute);
+  if (sameDay) {
+    if (sPeriod === ePeriod) {
+      const startCompact = startStr.replace(/(am|pm)$/, "");
+      return `<strong>${startLp.weekday}</strong> ${startCompact}–${endStr}`;
+    }
+    return `<strong>${startLp.weekday}</strong> ${startStr}–${endStr}`;
+  }
+  return `<strong>${startLp.weekday}</strong> ${startStr} – <strong>${endLp.weekday}</strong> ${endStr}`;
+}
+
+document.getElementById("find").addEventListener("click", () => {
+  resultsEl.innerHTML = "";
+
+  const rows = [...participantsEl.querySelectorAll(".participant")];
+  const participants = [];
+  for (const r of rows) {
+    const name = r.querySelector(".name").value.trim();
+    const locInput = r.querySelector(".loc").value.trim();
+    if (!locInput) continue;
+    const tz = resolveTz(locInput);
+    if (!tz) {
+      resultsEl.innerHTML = `<p class="err">Unknown location: "${escapeHtml(locInput)}". Pick from the suggestion list, or type an IANA name like <code>Asia/Tokyo</code>.</p>`;
+      return;
+    }
+    participants.push({ name: name || locInput.split(",")[0].trim(), tz, label: locInput });
+  }
+
+  if (participants.length < 2) {
+    resultsEl.innerHTML = `<p class="err">Add at least 2 participants.</p>`;
+    return;
+  }
+
+  const sleepStart = parseInt(document.getElementById("sleep-start").value);
+  const sleepEnd = parseInt(document.getElementById("sleep-end").value);
+  const bizStart = parseInt(document.getElementById("biz-start").value);
+  const bizEnd = parseInt(document.getElementById("biz-end").value);
+
+  const HOURS = 24;
+  const now = new Date();
+  const start = new Date(now);
+  start.setSeconds(0, 0);
+  start.setMinutes(0);
+  if (now.getMinutes() > 0 || now.getSeconds() > 0) start.setHours(start.getHours() + 1);
+
+  const slots = [];
+  for (let i = 0; i < HOURS; i++) {
+    const t = new Date(start.getTime() + i * 3600000);
+    const tEnd = new Date(t.getTime() + 3600000);
+    let allAwake = true;
+    let bizCount = 0;
+    const cells = [];
+    for (const p of participants) {
+      const lp = getLocalParts(t, p.tz);
+      const lpEnd = getLocalParts(tEnd, p.tz);
+      const tHour = lp.hour + lp.minute / 60;
+      if (inWindow(tHour, sleepStart, sleepEnd)) { allAwake = false; break; }
+      const inBiz = inWindow(tHour, bizStart, bizEnd);
+      if (inBiz) bizCount++;
+      cells.push({ p, lp, lpEnd, inBiz });
+    }
+    if (!allAwake) continue;
+    slots.push({ t, bizCount, cells });
+  }
+
+  if (slots.length === 0) {
+    resultsEl.innerHTML = `<p class="err">No times found where everyone is awake. Try widening the sleep window.</p>`;
+    return;
+  }
+
+  slots.sort((a, b) => b.bizCount - a.bizCount || a.t - b.t);
+
+  let html = `<h2>${slots.length} hour${slots.length === 1 ? "" : "s"} where everyone is awake</h2>`;
+  html += `<table><thead><tr><th>#</th><th>Quality</th>`;
+  for (const p of participants) {
+    html += `<th>${escapeHtml(p.name)}<small>${escapeHtml(p.tz)}</small></th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  let rank = 0;
+  for (const s of slots) {
+    rank++;
+    const ratio = s.bizCount / participants.length;
+    let qClass, qLabel;
+    if (ratio >= 0.999)     { qClass = "q-best"; qLabel = "Best"; }
+    else if (ratio >= 0.66) { qClass = "q-good"; qLabel = "Good"; }
+    else if (ratio >= 0.34) { qClass = "q-mid";  qLabel = "Not ideal"; }
+    else                    { qClass = "q-low";  qLabel = "Edgy"; }
+
+    html += `<tr>`;
+    html += `<td class="rank">${rank}</td>`;
+    html += `<td><span class="quality ${qClass}">${qLabel}</span></td>`;
+    for (const c of s.cells) {
+      const cellClass = c.inBiz ? "cell-good" : "cell-edge";
+      html += `<td class="${cellClass}">${fmtRange(c.lp, c.lpEnd)}</td>`;
+    }
+    html += `</tr>`;
+  }
+  html += `</tbody></table>`;
+  html += `<div class="legend">
+    <span><span class="legend-swatch" style="background:#d6f0d6"></span>In business hours</span>
+    <span><span class="legend-swatch" style="background:#fff1c8"></span>Awake but outside business hours</span>
+  </div>`;
+  html += `<p class="footnote">Rows are sorted with the best slots first. Each cell shows that hour in the participant's local time, colored by whether it falls inside their business hours.</p>`;
+
+  resultsEl.innerHTML = html;
+});
+</script>
+</body>
+</html>
