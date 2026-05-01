@@ -52,7 +52,7 @@
 
   .participant { display: flex; gap: 0.625rem; margin-bottom: 0.625rem; align-items: center; flex-wrap: wrap; }
   .participant:last-of-type { margin-bottom: 0; }
-  input[type="text"], input[type="email"], input[type="number"], select {
+  input[type="text"], input[type="email"], input[type="number"], input[type="date"], select {
     padding: 0.625rem 0.875rem;
     font-size: 0.9375rem;
     border: 1px solid var(--border);
@@ -214,6 +214,36 @@
   .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.8125rem; color: var(--text-secondary); margin-top: 0.875rem; }
   .legend-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
 
+  textarea {
+    width: 100%;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.9375rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.875rem;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 18px; height: 18px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+
   .toast {
     position: fixed;
     bottom: 1.5rem;
@@ -244,7 +274,7 @@
 <body>
 <div class="container">
   <h1>Meeting time finder</h1>
-  <p class="sub">Pick a city for each participant. The tool checks every hour in the next 24 hours, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours.</p>
+  <p class="sub">Pick a city for each participant and a meeting date. The tool checks every hour on that day, drops anything inside someone's sleep window, and ranks the rest by how many people are inside business hours.</p>
 
   <div class="card">
     <div class="card-head">
@@ -266,6 +296,9 @@
       <p class="hint">All times are interpreted in each participant's local timezone.</p>
     </div>
     <div class="controls">
+      <label>Meeting date
+        <input type="date" id="meeting-date">
+      </label>
       <label>Sleep window
         <span class="row"><input type="number" id="sleep-start" value="0" min="0" max="23"> – <input type="number" id="sleep-end" value="7" min="0" max="23"> (hour)</span>
       </label>
@@ -286,6 +319,18 @@
         <input type="text" id="event-title" value="Meeting" placeholder="Meeting">
       </label>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Conferencing (optional)</h3>
+      <p class="hint">Paste a join block (Zoom, Teams, Meet…) to include in the event description. Saved to your browser only (not public).</p>
+    </div>
+    <textarea id="zoom-info" rows="5" placeholder="Join Zoom Meeting&#10;https://zoom.us/j/...&#10;&#10;Meeting ID: ...&#10;Passcode: ..."></textarea>
+    <label class="checkbox-row">
+      <input type="checkbox" id="use-zoom">
+      <span>Use Yueqi's Zoom — include the info above in the event description</span>
+    </label>
   </div>
 
   <div class="actions">
@@ -363,6 +408,8 @@ const CITIES = [
 ];
 
 const TEAM_KEY = "when2meet:team:v1";
+const ZOOM_KEY = "when2meet:zoom:v1";
+const USE_ZOOM_KEY = "when2meet:useZoom:v1";
 const DEFAULT_TEAM = [
   { name: "", email: "", loc: "Singapore" },
   { name: "", email: "", loc: "San Francisco, USA" },
@@ -380,6 +427,26 @@ for (const [label] of CITIES) {
 const participantsEl = document.getElementById("participants");
 const resultsEl = document.getElementById("results");
 const toastEl = document.getElementById("toast");
+const zoomInputEl = document.getElementById("zoom-info");
+const useZoomEl = document.getElementById("use-zoom");
+
+function nextBusinessDay() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  return d;
+}
+function toDateInputStr(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+const dateEl = document.getElementById("meeting-date");
+dateEl.value = toDateInputStr(nextBusinessDay());
+
+try { zoomInputEl.value = localStorage.getItem(ZOOM_KEY) || ""; } catch {}
+try { useZoomEl.checked = localStorage.getItem(USE_ZOOM_KEY) === "1"; } catch {}
+zoomInputEl.addEventListener("input", () => { try { localStorage.setItem(ZOOM_KEY, zoomInputEl.value); } catch {} });
+useZoomEl.addEventListener("change", () => { try { localStorage.setItem(USE_ZOOM_KEY, useZoomEl.checked ? "1" : "0"); } catch {} });
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -459,9 +526,22 @@ function applyHashTeamIfPresent() {
   const m = location.hash.match(/^#team=([A-Za-z0-9_\-]+=*)/);
   if (!m) return false;
   try {
-    const team = teamFromB64(m[1]);
-    if (Array.isArray(team) && team.length > 0) {
+    const decoded = teamFromB64(m[1]);
+    let team, zoom;
+    if (Array.isArray(decoded)) {
+      team = decoded;
+    } else if (decoded && Array.isArray(decoded.team)) {
+      team = decoded.team;
+      zoom = decoded.zoom;
+    } else {
+      return false;
+    }
+    if (team.length > 0) {
       localStorage.setItem(TEAM_KEY, JSON.stringify(team));
+      if (typeof zoom === "string") {
+        localStorage.setItem(ZOOM_KEY, zoom);
+        zoomInputEl.value = zoom;
+      }
       history.replaceState(null, "", location.pathname + location.search);
       renderTeam(team);
       showToast("Team imported from share link");
@@ -476,7 +556,8 @@ document.getElementById("add-participant").addEventListener("click", () => { add
 document.getElementById("share-team").addEventListener("click", async () => {
   const team = readTeamFromUI().filter(p => p.name || p.email || p.loc);
   if (team.length === 0) { showToast("Add at least one person first"); return; }
-  const url = location.origin + location.pathname + "#team=" + teamToB64(team);
+  const payload = { team, zoom: zoomInputEl.value };
+  const url = location.origin + location.pathname + "#team=" + teamToB64(payload);
   try {
     await navigator.clipboard.writeText(url);
     showToast("Share link copied — send via private DM, not public");
@@ -569,7 +650,7 @@ function escapeIcsText(s) {
   return String(s).replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/[,;]/g, m => "\\" + m);
 }
 
-function buildEventBody(participants, slot) {
+function buildEventBody(participants, slot, includeZoom) {
   const refDay = slot.cells[0].lp.dayNum;
   const lines = participants.map((p, i) => {
     const c = slot.cells[i];
@@ -579,7 +660,12 @@ function buildEventBody(participants, slot) {
     const endStr = fmtTime(c.lpEnd.hour, c.lpEnd.minute);
     return `${p.name} (${p.tz}): ${startStr}–${endStr}${offStr}`;
   });
-  return lines.join("\n");
+  let body = lines.join("\n");
+  if (includeZoom) {
+    const zoom = zoomInputEl.value.trim();
+    if (zoom) body += "\n\n" + zoom;
+  }
+  return body;
 }
 
 function buildIcs({ title, start, end, body, attendees }) {
@@ -665,16 +751,30 @@ document.getElementById("find").addEventListener("click", () => {
   const durationMs = durationMin * 60 * 1000;
   const titleInput = document.getElementById("event-title").value.trim() || "Meeting";
 
-  const HOURS = 24;
+  const dateStr = dateEl.value;
+  if (!dateStr) {
+    resultsEl.innerHTML = `<p class="err">Pick a meeting date.</p>`;
+    return;
+  }
+  const [yy, mm, dd] = dateStr.split("-").map(Number);
+  const dayStart = new Date(yy, mm - 1, dd, 0, 0, 0, 0);
+  const dayEnd = new Date(dayStart.getTime() + 24 * 3600000);
   const now = new Date();
-  const start = new Date(now);
-  start.setSeconds(0, 0);
-  start.setMinutes(0);
-  if (now.getMinutes() > 0 || now.getSeconds() > 0) start.setHours(start.getHours() + 1);
+  let firstSlot;
+  if (now > dayStart) {
+    firstSlot = new Date(now);
+    firstSlot.setMilliseconds(0);
+    firstSlot.setSeconds(0);
+    firstSlot.setMinutes(0);
+    if (now.getMinutes() > 0 || now.getSeconds() > 0) firstSlot.setHours(firstSlot.getHours() + 1);
+  } else {
+    firstSlot = dayStart;
+  }
+  const HOURS = Math.max(0, Math.floor((dayEnd.getTime() - firstSlot.getTime()) / 3600000));
 
   const slots = [];
   for (let i = 0; i < HOURS; i++) {
-    const t = new Date(start.getTime() + i * 3600000);
+    const t = new Date(firstSlot.getTime() + i * 3600000);
     const tEnd = new Date(t.getTime() + durationMs);
     let allAwake = true;
     let bizCount = 0;
@@ -751,7 +851,7 @@ document.getElementById("find").addEventListener("click", () => {
       const attendees = participants
         .filter(p => p.email && isValidEmail(p.email))
         .map(p => ({ name: p.name, email: p.email }));
-      const body = buildEventBody(participants, slot);
+      const body = buildEventBody(participants, slot, useZoomEl.checked);
       const eventArgs = { title: titleInput, start: slot.t, end: slot.tEnd, body, attendees };
 
       if (btn.dataset.action === "ics") {
