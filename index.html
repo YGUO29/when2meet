@@ -668,8 +668,17 @@ function buildEventBody(participants, slot, includeZoom) {
   return body;
 }
 
+function htmlEscape(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function bodyToHtml(body) {
+  const escaped = htmlEscape(body).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+  return escaped.replace(/\n/g, "<br>");
+}
+
 function buildIcs({ title, start, end, body, attendees }) {
   const uid = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)) + "@when2meet";
+  const htmlBody = "<html><body>" + bodyToHtml(body) + "</body></html>";
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -682,6 +691,7 @@ function buildIcs({ title, start, end, body, attendees }) {
     "DTEND:" + utcStamp(end),
     "SUMMARY:" + escapeIcsText(title),
     "DESCRIPTION:" + escapeIcsText(body),
+    "X-ALT-DESC;FMTTYPE=text/html:" + escapeIcsText(htmlBody),
   ];
   for (const a of attendees) {
     const cn = escapeIcsText(a.name || a.email);
@@ -710,7 +720,7 @@ function outlookWebUrl({ title, start, end, body, attendees }) {
   params.set("subject", title);
   params.set("startdt", start.toISOString());
   params.set("enddt", end.toISOString());
-  params.set("body", body);
+  params.set("body", bodyToHtml(body));
   params.set("allday", "false");
   if (attendees.length) params.set("to", attendees.map(a => a.email).join(","));
   return "https://outlook.office.com/calendar/0/deeplink/compose?" + params.toString();
