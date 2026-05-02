@@ -518,6 +518,31 @@ function teamFromB64(s) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+async function packPayload(payload) {
+  const json = JSON.stringify(payload);
+  const stream = new CompressionStream("deflate-raw");
+  const writer = stream.writable.getWriter();
+  writer.write(new TextEncoder().encode(json));
+  writer.close();
+  const buf = await new Response(stream.readable).arrayBuffer();
+  let bin = "";
+  for (const b of new Uint8Array(buf)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function unpackPayload(s) {
+  let b = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (b.length % 4) b += "=";
+  const bin = atob(b);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const stream = new DecompressionStream("deflate-raw");
+  const writer = stream.writable.getWriter();
+  writer.write(bytes);
+  writer.close();
+  const buf = await new Response(stream.readable).arrayBuffer();
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+
 function addParticipant(p = { name: "", email: "", loc: "" }) {
   const row = document.createElement("div");
   row.className = "participant";
@@ -539,11 +564,17 @@ function renderTeam(team) {
   for (const p of team) addParticipant(p);
 }
 
-function applyHashTeamIfPresent() {
-  const m = location.hash.match(/^#team=([A-Za-z0-9_\-]+=*)/);
-  if (!m) return false;
+async function applyHashTeamIfPresent() {
+  let decoded;
   try {
-    const decoded = teamFromB64(m[1]);
+    let m;
+    if ((m = location.hash.match(/^#t=([A-Za-z0-9_\-]+)/))) {
+      decoded = await unpackPayload(m[1]);
+    } else if ((m = location.hash.match(/^#team=([A-Za-z0-9_\-]+=*)/))) {
+      decoded = teamFromB64(m[1]);
+    } else {
+      return false;
+    }
     let team, zoom;
     if (Array.isArray(decoded)) {
       team = decoded;
@@ -574,7 +605,13 @@ document.getElementById("share-team").addEventListener("click", async () => {
   const team = readTeamFromUI().filter(p => p.name || p.email || p.loc);
   if (team.length === 0) { showToast("Add at least one person first"); return; }
   const payload = { team, zoom: zoomInputEl.value };
-  const url = location.origin + location.pathname + "#team=" + teamToB64(payload);
+  let hash;
+  try {
+    hash = "#t=" + await packPayload(payload);
+  } catch {
+    hash = "#team=" + teamToB64(payload);
+  }
+  const url = location.origin + location.pathname + hash;
   try {
     await navigator.clipboard.writeText(url);
     showToast("Share link copied — send via private DM, not public");
@@ -590,9 +627,8 @@ document.getElementById("reset-team").addEventListener("click", () => {
   showToast("Participants cleared");
 });
 
-if (!applyHashTeamIfPresent()) {
-  renderTeam(loadTeam());
-}
+renderTeam(loadTeam());
+applyHashTeamIfPresent();
 
 function resolveTz(input) {
   const t = input.trim();
