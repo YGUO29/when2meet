@@ -295,8 +295,7 @@
     <div class="card-actions">
       <button class="add" id="add-participant">+ Add participant</button>
       <span class="spacer"></span>
-      <button class="ghost" id="share-team" title="Copy a private link that pre-fills this team for whoever opens it. Send via Slack/email — don't post publicly.">Copy team share link</button>
-      <button class="ghost danger" id="reset-team" title="Clear saved team and restore default cities">Reset team</button>
+      <button class="ghost danger" id="reset-team" title="Clear saved participants and restore default cities">Clear participants</button>
     </div>
   </div>
 
@@ -341,6 +340,14 @@
       <input type="checkbox" id="use-zoom">
       <span>Include conferencing info in the event description</span>
     </label>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Share with your team</h3>
+      <p class="hint">Copy a link that opens this page pre-filled with the participants and conferencing info above. Useful for getting a teammate set up in one click — send via private DM, not public posts.</p>
+    </div>
+    <button class="ghost" id="share-team">Copy link with pre-filled info</button>
   </div>
 
   <div class="actions">
@@ -577,10 +584,10 @@ document.getElementById("share-team").addEventListener("click", async () => {
 });
 
 document.getElementById("reset-team").addEventListener("click", () => {
-  if (!confirm("Clear saved team and restore the default cities?")) return;
+  if (!confirm("Clear saved participants and restore the default cities?")) return;
   localStorage.removeItem(TEAM_KEY);
   renderTeam(DEFAULT_TEAM);
-  showToast("Team reset to defaults");
+  showToast("Participants cleared");
 });
 
 if (!applyHashTeamIfPresent()) {
